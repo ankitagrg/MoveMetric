@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --color-accent-50: #eef6fd;
+  --color-accent-200: #b9d9f5;
+  --color-accent-400: #5b9de3;
+  --color-accent-500: #2a78d6;
+  --color-accent-600: #1f5eae;
+  --color-accent-700: #194b8a;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-stone-50);
+  color: var(--color-stone-900);
+  -webkit-font-smoothing: antialiased;
+}
