@@ -1,0 +1,102 @@
+import { useState } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import Button from './ui/Button'
+import Field from './ui/Field'
+import Card from './ui/Card'
+import Alert from './ui/Alert'
+
+export default function AuthForm({ onBack }) {
+  const [mode, setMode] = useState('login')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState(null)
+  const [message, setMessage] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError(null)
+    setMessage(null)
+    setSubmitting(true)
+
+    const { error } = mode === 'login'
+      ? await supabase.auth.signInWithPassword({ email, password })
+      : await supabase.auth.signUp({ email, password })
+
+    setSubmitting(false)
+
+    if (error) {
+      setError(error.message)
+      return
+    }
+
+    if (mode === 'signup') {
+      setMessage('Check your email to confirm your account.')
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4 py-12">
+      <div className="w-full max-w-sm">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="mb-6 text-sm text-stone-500 hover:text-stone-900 transition-colors"
+          >
+            &larr; Back
+          </button>
+        )}
+
+        <Card className="p-8">
+          <h1 className="text-xl font-semibold text-stone-900 tracking-tight">MoveMetric</h1>
+          <p className="mt-1 text-sm text-stone-500">
+            {mode === 'login' ? 'Welcome back — sign in to continue.' : 'Create an account to get started.'}
+          </p>
+
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <Field
+              label="Email"
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+            />
+
+            <Field
+              label="Password"
+              id="password"
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            />
+
+            {error && <Alert tone="error">{error}</Alert>}
+            {message && <Alert tone="success">{message}</Alert>}
+
+            <Button type="submit" disabled={submitting} size="lg" className="w-full">
+              {submitting ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Sign up'}
+            </Button>
+          </form>
+        </Card>
+
+        <button
+          type="button"
+          onClick={() => {
+            setMode(mode === 'login' ? 'signup' : 'login')
+            setError(null)
+            setMessage(null)
+          }}
+          className="mt-6 w-full text-center text-sm text-stone-500 hover:text-stone-900 transition-colors"
+        >
+          {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
+        </button>
+      </div>
+    </div>
+  )
+}
