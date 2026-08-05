@@ -12,6 +12,7 @@ function App() {
   const [showAuth, setShowAuth] = useState(false)
 
   if (loading) {
+    
     return <div className="min-h-screen bg-stone-50" />
   }
 
