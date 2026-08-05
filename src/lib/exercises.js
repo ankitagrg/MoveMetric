@@ -24,6 +24,16 @@ import {
 // `calibration`, when present, lets the trainer record the client's own
 // neutral posture before the set, so one of the angles is shown next to a
 // personal baseline instead of a generic number.
+//
+// `range`, when present on an angle, is a general "typical working range"
+// pulled from widely-cited coaching conventions (e.g. a squat around
+// parallel depth, an elbow near full lockout) — NOT a personalized or
+// clinical threshold, and not present on every angle: it's only set where
+// a broadly-agreed convention actually exists (skipped e.g. for deadlift
+// hip hinge, which varies too much by stance/torso length to give one
+// number). Falling outside it is shown as a soft "outside typical range"
+// flag, never as a correct/incorrect verdict — the trainer still makes
+// the call.
 export const EXERCISES = [
   {
     id: 'squat',
@@ -34,7 +44,10 @@ export const EXERCISES = [
     instructions: 'Lower knee angle = deeper squat. Do a rep, then save the deepest reading.',
     angles: [
       {
-        id: 'knee', label: 'Knee angle', type: 'joint', primary: true,
+        // Range covers ~parallel (60-70°) through half-squat (80-100°)
+        // depth — a generically-cited "reached working depth" band, not a
+        // claim about any individual's ideal depth or joint safety.
+        id: 'knee', label: 'Knee angle', type: 'joint', primary: true, range: [55, 100],
         left: [LEFT_HIP, LEFT_KNEE, LEFT_ANKLE], right: [RIGHT_HIP, RIGHT_KNEE, RIGHT_ANKLE],
       },
       {
@@ -62,7 +75,8 @@ export const EXERCISES = [
     instructions: 'Lower knee angle = deeper lunge. Do a rep on your front leg, then save the deepest reading.',
     angles: [
       {
-        id: 'knee', label: 'Front knee angle', type: 'joint', primary: true,
+        // ~90° front knee is the standard generic lunge coaching cue.
+        id: 'knee', label: 'Front knee angle', type: 'joint', primary: true, range: [80, 100],
         left: [LEFT_HIP, LEFT_KNEE, LEFT_ANKLE], right: [RIGHT_HIP, RIGHT_KNEE, RIGHT_ANKLE],
       },
       {
@@ -114,7 +128,9 @@ export const EXERCISES = [
     instructions: 'Lower elbow angle = deeper push-up. Do a rep, then save the deepest reading.',
     angles: [
       {
-        id: 'elbow', label: 'Elbow angle', type: 'joint', primary: true,
+        // ~90° elbow bend at the bottom is the standard generic push-up
+        // depth cue (upper arm roughly parallel to the floor).
+        id: 'elbow', label: 'Elbow angle', type: 'joint', primary: true, range: [80, 100],
         left: [LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST], right: [RIGHT_SHOULDER, RIGHT_ELBOW, RIGHT_WRIST],
       },
       {
@@ -142,7 +158,9 @@ export const EXERCISES = [
     instructions: 'Higher elbow angle = fuller lockout. Do a rep, then save the highest reading.',
     angles: [
       {
-        id: 'elbow', label: 'Elbow angle', type: 'joint', primary: true,
+        // Full lockout means near-complete elbow extension; some margin
+        // below 180° is normal camera/landmark noise, not a bent elbow.
+        id: 'elbow', label: 'Elbow angle', type: 'joint', primary: true, range: [165, 180],
         left: [LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST], right: [RIGHT_SHOULDER, RIGHT_ELBOW, RIGHT_WRIST],
       },
       {
