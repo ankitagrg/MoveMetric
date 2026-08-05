@@ -7,11 +7,31 @@
   --color-accent-500: #2a78d6;
   --color-accent-600: #1f5eae;
   --color-accent-700: #194b8a;
+
+  /* Measurement palette — the fixed, ordered set of colors used to tell one
+     tracked angle from another across the live overlay, readouts, and hero
+     art. Order is fixed (never cycled); index 0 intentionally matches
+     accent-500 so the primary tracked angle reads as "the brand color". */
+  --color-measure-1: #2a78d6;
+  --color-measure-2: #16a34a;
+  --color-measure-3: #d97706;
+  --color-measure-4: #7c3aed;
+  --color-measure-ref: #dc2626;
+
+  /* Reserved status color — never reused as a per-angle identity color, and
+     never shown without an icon + label alongside it (see ExerciseCapture). */
+  --color-status-warning: #dc2626;
 }
+
 
 body {
   margin: 0;
   background-color: var(--color-stone-50);
   color: var(--color-stone-900);
   -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: var(--color-accent-200);
+  color: var(--color-accent-700);
 }
