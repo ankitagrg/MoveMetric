@@ -4,6 +4,7 @@ import Button from './ui/Button'
 import Field from './ui/Field'
 import Card from './ui/Card'
 import Alert from './ui/Alert'
+import Logo from './ui/Logo'
 
 export default function AuthForm({ onBack }) {
   const [mode, setMode] = useState('login')
@@ -36,7 +37,16 @@ export default function AuthForm({ onBack }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4 py-12">
+    <div className="relative min-h-screen flex items-center justify-center bg-stone-50 px-4 py-12">
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          backgroundImage: 'radial-gradient(var(--color-stone-300) 1px, transparent 1px)',
+          backgroundSize: '22px 22px',
+          maskImage: 'radial-gradient(ellipse 60% 60% at center, black 30%, transparent 85%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 60% 60% at center, black 30%, transparent 85%)',
+        }}
+      />
       <div className="w-full max-w-sm">
         {onBack && (
           <button
@@ -49,8 +59,11 @@ export default function AuthForm({ onBack }) {
         )}
 
         <Card className="p-8">
-          <h1 className="text-xl font-semibold text-stone-900 tracking-tight">MoveMetric</h1>
-          <p className="mt-1 text-sm text-stone-500">
+          <div className="flex items-center gap-3">
+            <Logo />
+            <h1 className="text-xl font-semibold text-stone-900 tracking-tight">MoveMetric</h1>
+          </div>
+          <p className="mt-4 text-sm text-stone-500">
             {mode === 'login' ? 'Welcome back — sign in to continue.' : 'Create an account to get started.'}
           </p>
 
