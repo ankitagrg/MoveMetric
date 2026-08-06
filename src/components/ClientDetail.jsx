@@ -6,6 +6,15 @@ import Button from './ui/Button'
 import Field from './ui/Field'
 import Card from './ui/Card'
 import Alert from './ui/Alert'
+import EmptyState from './ui/EmptyState'
+import { SkeletonList } from './ui/Skeleton'
+
+const trendIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 19V5m0 14h16" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 15.5 11 11l3 2.5 4.5-5.5" />
+  </svg>
+)
 
 export default function ClientDetail({ client, onBack }) {
   const { metrics, loading, addMetric } = useMetrics(client.id)
@@ -19,11 +28,18 @@ export default function ClientDetail({ client, onBack }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
+
+    const numericValue = parseFloat(value)
+    if (Number.isNaN(numericValue)) {
+      setError('Value must be a number.')
+      return
+    }
+
     setSubmitting(true)
 
     const { error } = await addMetric({
       metricName,
-      value: parseFloat(value),
+      value: numericValue,
       unit: unit || null,
       notes: null,
     })
@@ -62,7 +78,12 @@ export default function ClientDetail({ client, onBack }) {
         ← Back to clients
       </button>
 
-      <h2 className="text-xl font-semibold text-stone-900 tracking-tight">{client.name}</h2>
+      <div className="flex items-center gap-3">
+        <span className="w-10 h-10 rounded-full bg-stone-100 text-stone-500 text-sm font-semibold flex items-center justify-center shrink-0">
+          {client.name?.[0]?.toUpperCase() ?? '?'}
+        </span>
+        <h2 className="text-xl font-semibold text-stone-900 tracking-tight">{client.name}</h2>
+      </div>
 
       {showCamera ? (
         <ExerciseCapture addMetric={addMetric} onDone={() => setShowCamera(false)} />
@@ -129,12 +150,14 @@ export default function ClientDetail({ client, onBack }) {
       <div>
         <h3 className="text-lg font-semibold text-stone-900 mb-3">History</h3>
 
-        {loading && <p className="text-sm text-stone-400">Loading…</p>}
+        {loading && <SkeletonList rows={3} />}
 
         {!loading && metrics.length === 0 && (
-          <Card className="px-4 py-8 text-center">
-            <p className="text-sm text-stone-400">No metrics logged yet.</p>
-          </Card>
+          <EmptyState
+            icon={trendIcon}
+            title="No metrics logged yet"
+            message="Log one above or measure via camera to start a trend."
+          />
         )}
 
         {metrics.length > 0 && (
