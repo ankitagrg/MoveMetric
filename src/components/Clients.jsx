@@ -5,6 +5,15 @@ import Button from './ui/Button'
 import Field from './ui/Field'
 import Card from './ui/Card'
 import Alert from './ui/Alert'
+import EmptyState from './ui/EmptyState'
+import { SkeletonList } from './ui/Skeleton'
+
+const usersIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
+    <circle cx="12" cy="8.5" r="3.25" />
+    <path strokeLinecap="round" d="M5 20c0-3.6 3.13-6 7-6s7 2.4 7 6" />
+  </svg>
+)
 
 export default function Clients() {
   const { clients, loading, addClient } = useClients()
@@ -82,12 +91,14 @@ export default function Clients() {
       <div>
         <h2 className="text-lg font-semibold text-stone-900 mb-3">Clients</h2>
 
-        {loading && <p className="text-sm text-stone-400">Loading…</p>}
+        {loading && <SkeletonList rows={3} />}
 
         {!loading && clients.length === 0 && (
-          <Card className="px-4 py-8 text-center">
-            <p className="text-sm text-stone-400">No clients yet — add your first one above.</p>
-          </Card>
+          <EmptyState
+            icon={usersIcon}
+            title="No clients yet"
+            message="Add your first one above to start tracking their metrics."
+          />
         )}
 
         {clients.length > 0 && (
@@ -96,17 +107,20 @@ export default function Clients() {
               <button
                 key={client.id}
                 onClick={() => setSelectedClient(client)}
-                className="w-full text-left px-4 py-3.5 hover:bg-stone-50 transition-colors flex items-center justify-between gap-4"
+                className="w-full text-left px-4 py-3.5 hover:bg-stone-50 transition-colors flex items-center gap-3.5"
               >
-                <div>
-                  <p className="font-medium text-stone-900">{client.name}</p>
+                <span className="w-8 h-8 rounded-full bg-stone-100 text-stone-500 text-xs font-semibold flex items-center justify-center shrink-0">
+                  {client.name?.[0]?.toUpperCase() ?? '?'}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-stone-900 truncate">{client.name}</p>
                   {(client.email || client.phone) && (
-                    <p className="text-sm text-stone-400">
+                    <p className="text-sm text-stone-400 truncate">
                       {[client.email, client.phone].filter(Boolean).join(' · ')}
                     </p>
                   )}
                 </div>
-                <span className="text-stone-300">&rarr;</span>
+                <span className="text-stone-300 shrink-0">&rarr;</span>
               </button>
             ))}
           </Card>
