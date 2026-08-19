@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
-import Button from './ui/Button'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { REMEMBER_ME_KEY, supabase } from '../lib/supabaseClient'
 import Field from './ui/Field'
 import Card from './ui/Card'
 import Alert from './ui/Alert'
@@ -19,19 +19,27 @@ function EyeIcon({ hidden }) {
   )
 }
 
-export default function AuthForm({ onBack }) {
-  const [mode, setMode] = useState('login')
+export default function AuthForm({ mode: initialMode = 'login', onBack }) {
+  const navigate = useNavigate()
+  const [mode, setMode] = useState(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState(null)
   const [message, setMessage] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    setMode(initialMode)
+  }, [initialMode])
 
   function switchMode(next) {
     setMode(next)
     setError(null)
     setMessage(null)
+    if (next === 'login') navigate('/login')
+    else if (next === 'signup') navigate('/register')
   }
 
   async function handleSubmit(e) {
@@ -51,8 +59,10 @@ export default function AuthForm({ onBack }) {
       return
     }
 
+    localStorage.setItem(REMEMBER_ME_KEY, mode === 'login' ? String(rememberMe) : 'true')
+
     setSubmitting(true)
-    const { error } = mode === 'login'
+    const { data, error } = mode === 'login'
       ? await supabase.auth.signInWithPassword({ email, password })
       : await supabase.auth.signUp({ email, password })
 
@@ -63,7 +73,7 @@ export default function AuthForm({ onBack }) {
       return
     }
 
-    if (mode === 'signup') {
+    if (mode === 'signup' && !data.session) {
       setMessage('Check your email to confirm your account.')
     }
   }
@@ -169,16 +179,32 @@ export default function AuthForm({ onBack }) {
                   </div>
                 )}
 
+                {mode === 'login' && (
+                  <label className="flex items-center gap-2 text-sm text-stone-600 select-none cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="h-4 w-4 rounded border-stone-300 accent-stone-900"
+                    />
+                    Remember me
+                  </label>
+                )}
+
                 {error && <Alert tone="error">{error}</Alert>}
                 {message && <Alert tone="success">{message}</Alert>}
 
-                <Button type="submit" disabled={submitting} size="lg" className="w-full">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full h-11 rounded-2xl bg-stone-900 text-white text-sm font-bold shadow-lg shadow-stone-200/50 hover:bg-stone-800 active:scale-[0.98] transition-all inline-flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/30 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none"
+                >
                   {submitting
                     ? 'Please wait…'
                     : mode === 'login' ? 'Sign in →'
                     : mode === 'signup' ? 'Sign up →'
                     : 'Send reset link →'}
-                </Button>
+                </button>
               </form>
 
               {mode === 'reset' ? (
@@ -193,9 +219,13 @@ export default function AuthForm({ onBack }) {
                 <button
                   type="button"
                   onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-                  className="mt-6 w-full text-center text-sm text-stone-500 hover:text-stone-900 transition-colors"
+                  className="mt-6 w-full text-center text-sm text-stone-500 transition-colors"
                 >
-                  {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
+                  {mode === 'login' ? (
+                    <>Don&apos;t have an account? <span className="text-measure-4 font-bold hover:opacity-80 transition-opacity">Sign up</span></>
+                  ) : (
+                    <>Already have an account? <span className="text-measure-4 font-bold hover:opacity-80 transition-opacity">Log in</span></>
+                  )}
                 </button>
               )}
 
