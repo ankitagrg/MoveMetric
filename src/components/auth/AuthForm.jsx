@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { REMEMBER_ME_KEY, supabase } from '../lib/supabaseClient'
-import Field from './ui/Field'
-import Card from './ui/Card'
-import Alert from './ui/Alert'
-import Logo from './ui/Logo'
+import { REMEMBER_ME_KEY, supabase } from '../../lib/supabaseClient'
+import Field from '../ui/Field'
+import Card from '../ui/Card'
+import Alert from '../ui/Alert'
+import Logo from '../ui/Logo'
+import Button from '../ui/Button'
 
 function EyeIcon({ hidden }) {
   return hidden ? (
@@ -194,17 +195,13 @@ export default function AuthForm({ mode: initialMode = 'login', onBack }) {
                 {error && <Alert tone="error">{error}</Alert>}
                 {message && <Alert tone="success">{message}</Alert>}
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full h-11 rounded-2xl bg-stone-900 text-white text-sm font-bold shadow-lg shadow-stone-200/50 hover:bg-stone-800 active:scale-[0.98] transition-all inline-flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/30 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none"
-                >
+                <Button type="submit" disabled={submitting} className="w-full">
                   {submitting
                     ? 'Please wait…'
                     : mode === 'login' ? 'Sign in →'
                     : mode === 'signup' ? 'Sign up →'
                     : 'Send reset link →'}
-                </button>
+                </Button>
               </form>
 
               {mode === 'reset' ? (
