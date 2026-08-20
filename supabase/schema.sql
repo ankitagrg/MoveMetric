@@ -43,3 +43,48 @@ create policy "Trainers manage metrics for their own clients"
   for all
   using (auth.uid() = trainer_id)
   with check (auth.uid() = trainer_id);
+
+-- Points at an object in the capture-videos storage bucket rather than
+-- storing a URL directly — the bucket is private, so any usable URL has to
+-- be a short-lived signed URL generated on demand (see useMetrics.js's
+-- getVideoUrl), not something safe to persist as a permanent link.
+alter table public.metrics add column if not exists video_path text;
+
+-- Private bucket: capture videos are per-client movement footage, not
+-- public content. `on conflict do nothing` makes this safe to re-run.
+insert into storage.buckets (id, name, public)
+values ('capture-videos', 'capture-videos', false)
+on conflict (id) do nothing;
+
+-- Objects are uploaded to `{trainer_id}/{client_id}/{uuid}.webm` — these
+-- three policies key off the first path segment being the uploader's own
+-- auth uid, so a trainer can only ever read/write/delete videos under their
+-- own folder, the same isolation the clients/metrics RLS policies give.
+create policy "Trainers upload their own capture videos"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'capture-videos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+create policy "Trainers view their own capture videos"
+  on storage.objects for select
+  using (
+    bucket_id = 'capture-videos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+create policy "Trainers delete their own capture videos"
+  on storage.objects for delete
+  using (
+    bucket_id = 'capture-videos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- Without this, PostgREST can keep serving from its cached schema and
+-- return "Could not find the table/column in the schema cache" right after
+-- this migration runs, even though it succeeded — see the goals-table
+-- migration for exactly this happening. Forcing a reload here means the
+-- app can be tried immediately after running this script, not after a
+-- confusing extra troubleshooting round.
+NOTIFY pgrst, 'reload schema';
