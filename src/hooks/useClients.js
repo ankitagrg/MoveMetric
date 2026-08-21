@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { supabase, getAuthedUserId, SESSION_EXPIRED_ERROR } from '../lib/supabaseClient'
 
 export function useClients() {
   const [clients, setClients] = useState([])
@@ -7,11 +7,17 @@ export function useClients() {
 
   const fetchClients = useCallback(async () => {
     setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
+    const userId = await getAuthedUserId()
+    if (!userId) {
+      setClients([])
+      setLoading(false)
+      return
+    }
+
     const { data, error } = await supabase
       .from('clients')
       .select('*')
-      .eq('trainer_id', user.id)
+      .eq('trainer_id', userId)
       .order('created_at', { ascending: false })
 
     if (!error) setClients(data)
@@ -23,10 +29,12 @@ export function useClients() {
   }, [fetchClients])
 
   async function addClient({ name, email, phone, notes }) {
-    const { data: { user } } = await supabase.auth.getUser()
+    const userId = await getAuthedUserId()
+    if (!userId) return { error: SESSION_EXPIRED_ERROR }
+
     const { data, error } = await supabase
       .from('clients')
-      .insert({ trainer_id: user.id, name, email, phone, notes })
+      .insert({ trainer_id: userId, name, email, phone, notes })
       .select()
       .single()
 
@@ -35,12 +43,14 @@ export function useClients() {
   }
 
   async function updateClient(id, { name, email, phone, notes }) {
-    const { data: { user } } = await supabase.auth.getUser()
+    const userId = await getAuthedUserId()
+    if (!userId) return { data: null, error: SESSION_EXPIRED_ERROR }
+
     const { data, error } = await supabase
       .from('clients')
       .update({ name, email, phone, notes })
       .eq('id', id)
-      .eq('trainer_id', user.id)
+      .eq('trainer_id', userId)
       .select()
       .single()
 
@@ -52,12 +62,14 @@ export function useClients() {
   // supabase/schema.sql — metrics.client_id is `on delete cascade`), so this
   // is a single irreversible action, not just an unlink.
   async function deleteClient(id) {
-    const { data: { user } } = await supabase.auth.getUser()
+    const userId = await getAuthedUserId()
+    if (!userId) return { error: SESSION_EXPIRED_ERROR }
+
     const { error } = await supabase
       .from('clients')
       .delete()
       .eq('id', id)
-      .eq('trainer_id', user.id)
+      .eq('trainer_id', userId)
 
     if (!error) setClients((prev) => prev.filter((c) => c.id !== id))
     return { error }
