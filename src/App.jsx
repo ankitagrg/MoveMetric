@@ -1,52 +1,52 @@
-import { useState } from 'react'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
-import { supabase } from './lib/supabaseClient'
-import AuthForm from './components/AuthForm'
-import Landing from './components/Landing'
-import Clients from './components/Clients'
+import AuthForm from './components/auth/AuthForm'
+import Landing from './components/marketing/Landing'
+import Layout from './components/Layout'
+import ClientsPage from './pages/ClientsPage'
+import ClientDetailPage from './pages/ClientDetailPage'
+import CapturePage from './pages/CapturePage'
 import Logo from './components/ui/Logo'
-import Button from './components/ui/Button'
 
 function App() {
   const { session, loading } = useAuth()
-  const [showAuth, setShowAuth] = useState(false)
+  const navigate = useNavigate()
 
   if (loading) {
-    
-    return <div className="min-h-screen bg-stone-50" />
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stone-50">
+        <Logo className="animate-pulse" />
+      </div>
+    )
   }
 
   if (!session) {
-    return showAuth
-      ? <AuthForm onBack={() => setShowAuth(false)} />
-      : <Landing onGetStarted={() => setShowAuth(true)} />
+    return (
+      <Routes>
+        <Route path="/login" element={<AuthForm mode="login" onBack={() => navigate('/')} />} />
+        <Route path="/register" element={<AuthForm mode="signup" onBack={() => navigate('/')} />} />
+        <Route path="/" element={<Landing onGetStarted={() => navigate('/login')} />} />
+        {/* Any other path (e.g. a stale /clients/:id/capture link left over
+            from a session that just expired) gets bounced to the actual
+            Landing URL instead of rendering Landing's content underneath an
+            unrelated address bar. */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    )
   }
 
-  const initial = session.user.email?.[0]?.toUpperCase() ?? '?'
-
   return (
-    <div className="min-h-screen bg-stone-50">
-      <header className="sticky top-0 z-10 bg-stone-50/80 backdrop-blur-sm border-b border-stone-200/70">
-        <div className="flex items-center justify-between px-6 py-3.5 max-w-4xl mx-auto">
-          <span className="flex items-center gap-2.5">
-            <Logo size="sm" />
-            <h1 className="text-lg font-semibold text-stone-900 tracking-tight">MoveMetric</h1>
-          </span>
-          <div className="flex items-center gap-3">
-            <span className="hidden sm:flex items-center gap-2">
-              <span className="w-7 h-7 rounded-full bg-stone-200 text-stone-600 text-xs font-semibold flex items-center justify-center">
-                {initial}
-              </span>
-              <span className="text-sm text-stone-500">{session.user.email}</span>
-            </span>
-            <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()}>
-              Sign out
-            </Button>
-          </div>
-        </div>
-      </header>
-      <Clients />
-    </div>
+    <Routes>
+      <Route element={<Layout session={session} />}>
+        <Route index element={<Navigate to="/clients" replace />} />
+        <Route path="clients" element={<ClientsPage />} />
+        <Route path="clients/:clientId" element={<ClientDetailPage />} />
+        <Route path="clients/:clientId/capture" element={<CapturePage />} />
+        <Route path="clients/:clientId/capture/live" element={<CapturePage />} />
+        <Route path="clients/:clientId/capture/results" element={<CapturePage />} />
+        <Route path="*" element={<Navigate to="/clients" replace />} />
+      </Route>
+    </Routes>
   )
 }
 
