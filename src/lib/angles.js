@@ -10,7 +10,11 @@ export function angleAtPoint(a, b, c) {
   return (Math.acos(cos) * 180) / Math.PI
 }
 
-export const MIN_VISIBILITY = 0.5
+// Raised from the model's default-ish 0.5 — a landmark MediaPipe is only
+// "50% sure" about was getting used in angle math, which is exactly the kind
+// of borderline detection that produces a wrong-looking reading. 0.65 cuts
+// off more of that noise while still tracking normally in decent lighting.
+export const MIN_VISIBILITY = 0.65
 
 // True only if every given landmark index is present with visibility at or
 // above the threshold. Each measurement gates on the specific landmarks it
@@ -32,14 +36,44 @@ export function angleFromVertical(top, bottom) {
   return (Math.acos(cos) * 180) / Math.PI
 }
 
+// Margin by which the *other* side must lead the current side before
+// pickSide will switch to it. Without this, two sides sitting close in
+// visibility (e.g. 0.68 vs 0.64) can flip which one wins from one frame to
+// the next on pure noise, splicing left- and right-side landmarks into the
+// same rep and producing a spurious angle spike.
+export const SIDE_SWITCH_MARGIN = 0.15
+
 // Picks whichever side (left/right) of the body is more visible to the
-// camera, once per frame, using the given landmark pair (typically the
-// hips) as a stable proxy. Every angle tracked that frame is measured on
-// this same side, so a knee/hip/spine reading never mixes limbs.
-export function pickSide(landmarks, leftIdx, rightIdx) {
-  const leftVis = landmarks[leftIdx]?.visibility ?? 0
-  const rightVis = landmarks[rightIdx]?.visibility ?? 0
+// camera, using the given landmark pair (typically the hips) as a stable
+// proxy. Every angle tracked that frame is measured on this same side, so a
+// knee/hip/spine reading never mixes limbs. Pass the previously-picked side
+// (e.g. from a ref) to make the choice "sticky": once a side is locked in,
+// it's kept unless the other side is now clearly more visible, or the
+// current side has dropped below the visibility floor entirely.
+//
+// If both primary landmarks fall below the visibility floor (e.g. hips cut
+// out of frame in a seated exercise, or occluded by a bench), falls back to
+// a second landmark pair (typically the shoulders) rather than giving up —
+// otherwise every angle for that frame reads null, even ones that don't use
+// the primary pair at all, since picking a side is a prerequisite for all of
+// them.
+export function pickSide(landmarks, leftIdx, rightIdx, previousSide = null, fallbackLeftIdx = null, fallbackRightIdx = null) {
+  let leftVis = landmarks[leftIdx]?.visibility ?? 0
+  let rightVis = landmarks[rightIdx]?.visibility ?? 0
+
+  if (leftVis < MIN_VISIBILITY && rightVis < MIN_VISIBILITY && fallbackLeftIdx != null) {
+    leftVis = landmarks[fallbackLeftIdx]?.visibility ?? 0
+    rightVis = landmarks[fallbackRightIdx]?.visibility ?? 0
+  }
+
   if (leftVis < MIN_VISIBILITY && rightVis < MIN_VISIBILITY) return null
+
+  if (previousSide === 'left' && leftVis >= MIN_VISIBILITY) {
+    return rightVis - leftVis > SIDE_SWITCH_MARGIN ? 'right' : 'left'
+  }
+  if (previousSide === 'right' && rightVis >= MIN_VISIBILITY) {
+    return leftVis - rightVis > SIDE_SWITCH_MARGIN ? 'left' : 'right'
+  }
   return rightVis > leftVis ? 'right' : 'left'
 }
 
