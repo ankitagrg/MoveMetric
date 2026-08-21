@@ -26,3 +26,14 @@ const rememberAwareStorage = {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: { storage: rememberAwareStorage },
 })
+
+export const SESSION_EXPIRED_ERROR = { message: 'Your session has expired. Please sign in again.' }
+
+// Every trainer-scoped query needs the current user's id. Returns null
+// instead of throwing when the session is invalid/expired (e.g. a revoked
+// refresh token) so callers can show SESSION_EXPIRED_ERROR instead of
+// crashing on `user.id` of a null user.
+export async function getAuthedUserId() {
+  const { data: { user } } = await supabase.auth.getUser()
+  return user?.id ?? null
+}
