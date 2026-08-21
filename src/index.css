@@ -1,17 +1,34 @@
 @import "tailwindcss";
 
 @theme {
-  --color-accent-50: #eef6fd;
-  --color-accent-200: #b9d9f5;
-  --color-accent-400: #5b9de3;
-  --color-accent-500: #2a78d6;
-  --color-accent-600: #1f5eae;
-  --color-accent-700: #194b8a;
+  /* Minimal black & white theme: every `stone-*` utility used across the app
+     (bg-stone-50, text-stone-900, border-stone-200, …) is redefined here to
+     a true zero-hue grayscale instead of Tailwind's default warm/brown-tinted
+     stone ramp — one override point turns the whole app's chrome black/white
+     without touching every component's classNames individually. */
+  --color-stone-50: #fafafa;
+  --color-stone-100: #f5f5f5;
+  --color-stone-200: #e5e5e5;
+  --color-stone-300: #d4d4d4;
+  /* Darkened from Tailwind's usual #a3a3a3 (only ~2.5:1 against white) to a
+     value that clears WCAG AA's 4.5:1 for normal text — this ramp step is
+     used all over the app as real, readable secondary copy (captions,
+     labels, hints), not just decoration, so it needs to actually be legible
+     on the app's white/near-white surfaces. */
+  --color-stone-400: #767676;
+  --color-stone-500: #737373;
+  --color-stone-600: #525252;
+  --color-stone-700: #404040;
+  --color-stone-800: #262626;
+  --color-stone-900: #171717;
+  --color-stone-950: #0a0a0a;
 
   /* Measurement palette — the fixed, ordered set of colors used to tell one
      tracked angle from another across the live overlay, readouts, and hero
-     art. Order is fixed (never cycled); index 0 intentionally matches
-     accent-500 so the primary tracked angle reads as "the brand color". */
+     art. Order is fixed (never cycled). Unlike the rest of the app's B&W
+     chrome, this palette stays in full color on purpose: it's drawn on top
+     of live camera video, where grayscale lines disappear against arbitrary
+     backgrounds/skin tones — visibility here matters more than the theme. */
   --color-measure-1: #2a78d6;
   --color-measure-2: #16a34a;
   --color-measure-3: #d97706;
@@ -21,6 +38,11 @@
   /* Reserved status color — never reused as a per-angle identity color, and
      never shown without an icon + label alongside it (see ExerciseCapture). */
   --color-status-warning: #dc2626;
+
+  /* Tinted elevation — plain black box-shadows read heavy against a pure
+     white/grayscale UI, so these lean on the stone ramp instead of #000. */
+  --shadow-soft: 0 1px 2px rgba(23, 23, 23, 0.04), 0 6px 16px -6px rgba(23, 23, 23, 0.08);
+  --shadow-soft-lg: 0 2px 4px rgba(23, 23, 23, 0.04), 0 16px 32px -12px rgba(23, 23, 23, 0.14);
 }
 
 
@@ -32,6 +54,122 @@ body {
 }
 
 ::selection {
-  background-color: var(--color-accent-200);
-  color: var(--color-accent-700);
+  background-color: var(--color-stone-200);
+  color: var(--color-stone-900);
+}
+
+/* One consistent keyboard-focus ring for every interactive element in the
+   app, set globally instead of per-component. Without this, only the
+   handful of elements that happen to define their own focus-visible ring
+   (the shared Button, Field's inputs) look intentional; every raw text
+   link — Cancel, Edit, Forgot?, the roster's own back link — falls through
+   to the browser's default outline, which is usually a jarring blue ring
+   against this app's monochrome UI. `:focus-visible` (not `:focus`) so it
+   only shows for keyboard/assistive nav, never on a plain mouse click. */
+:focus-visible {
+  outline: 2px solid var(--color-stone-900);
+  outline-offset: 2px;
+}
+
+/* Same idea for tactile press feedback: every native <button> gets a
+   subtle press-down scale by default. Elements that already define their
+   own active state (Button's `active:scale-[0.97]`, SegmentedControl's
+   `active:scale-95`) win over this automatically — a class selector like
+   `.active\:scale-95:active` is more specific than the bare `button:active`
+   below — so this only fills the gap for buttons that don't set one, it
+   never fights the ones that do. */
+button:not(:disabled) {
+  transition: transform 0.1s ease;
+}
+button:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+/* Entrance/interaction motion shared across the app shell — kept as plain
+   CSS (not a JS animation lib) so it costs nothing on the bundle. */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in {
+  animation: scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes shimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+.animate-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-stone-100) 30%,
+    var(--color-stone-200) 45%,
+    var(--color-stone-100) 60%
+  );
+  background-size: 250% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes draw-line {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.animate-draw-line {
+  stroke-dasharray: 1;
+  animation: draw-line 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-scale-in,
+  .animate-shimmer,
+  .animate-draw-line {
+    animation: none;
+  }
+}
+
+/* Faint fixed dot grid behind the signed-in app shell — same visual
+   language as the marketing/auth screens, at low enough opacity to sit
+   behind content without competing with it. Applied to a decorative
+   ::before layer, never to the content container itself — masking the
+   container directly would fade the actual UI, not just the backdrop. */
+.app-shell-bg {
+  position: relative;
+  background-color: var(--color-stone-50);
+}
+.app-shell-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(var(--color-stone-300) 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-position: -11px -11px;
+  -webkit-mask-image: radial-gradient(ellipse 100% 55% at 50% 0%, black 0%, transparent 75%);
+  mask-image: radial-gradient(ellipse 100% 55% at 50% 0%, black 0%, transparent 75%);
+}
+.app-shell-bg > * {
+  position: relative;
+  z-index: 1;
+}
+/* The rule above resets every direct child of the app shell to the same
+   z-index: 1 stacking level (just to lift them above the ::before dot-grid
+   backdrop at z-index: 0) — but that means the header and the page content
+   below it tie, and ties resolve by DOM order, so the content (later in the
+   DOM) was winning and painting over the header's dropdown menu. This is a
+   plain, unlayered rule, so it beats any Tailwind utility class (Tailwind's
+   utilities live in @layer, which unlayered CSS always outranks) — a
+   sticky/z-30 on the header itself can't override it. Higher specificity
+   here is the only thing that can. */
+.app-shell-bg > header {
+  z-index: 20;
 }
