@@ -65,7 +65,7 @@ const tapIcon = (
   </svg>
 )
 
-export default function MetricTrendChart({ metricName, points }) {
+export default function MetricTrendChart({ metricName, points, higherIsBetter = true }) {
   const svgRef = useRef(null)
   const [hoverIndex, setHoverIndex] = useState(null)
   const [pinnedIndex, setPinnedIndex] = useState(null)
@@ -164,6 +164,13 @@ export default function MetricTrendChart({ metricName, points }) {
   const hovered = activeIndex !== null ? sorted[activeIndex] : null
   const hoveredPrev = activeIndex !== null && activeIndex > 0 ? sorted[activeIndex - 1] : null
   const delta = sorted.length >= 2 ? last.value - first.value : null
+  // Direction alone doesn't say whether a metric improved — e.g. squat depth
+  // getting *lower* is deeper, i.e. better (see higherIsBetterForMetric) —
+  // so "good/bad" coloring has to check the metric's own direction, not just
+  // whether the raw number went up or down.
+  const deltaImproved = delta ? (higherIsBetter ? delta > 0 : delta < 0) : null
+  const prevDelta = hoveredPrev ? hovered.value - hoveredPrev.value : null
+  const prevImproved = prevDelta ? (higherIsBetter ? prevDelta > 0 : prevDelta < 0) : null
 
   const values = sorted.map((p) => p.value)
   const peak = Math.max(...values)
@@ -196,12 +203,11 @@ export default function MetricTrendChart({ metricName, points }) {
         </div>
 
         {delta != null && (
-          // Same emerald/red-for-direction convention the pinned tooltip
-          // below already uses (pre-existing) — this badge previously
-          // stayed plain gray, which read inconsistently next to a tooltip
-          // that already color-codes the same up/down comparison.
+          // Emerald/red encodes improved-vs-worsened (deltaImproved), not
+          // raw up/down — see deltaImproved above. The arrow icon below
+          // still reflects the actual raw direction the number moved.
           <span
-            className={`inline-flex items-center gap-1.5 text-sm font-medium rounded-full px-3 py-1.5 shrink-0 ${delta > 0 ? 'text-emerald-600 bg-emerald-50' : delta < 0 ? 'text-red-600 bg-red-50' : 'text-stone-500 bg-stone-100'}`}
+            className={`inline-flex items-center gap-1.5 text-sm font-medium rounded-full px-3 py-1.5 shrink-0 ${delta === 0 ? 'text-stone-500 bg-stone-100' : deltaImproved ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'}`}
           >
             <span className="inline-flex items-center justify-center w-3.5 h-3.5">
               {delta > 0 ? upIcon : delta < 0 ? downIcon : '—'}
@@ -367,8 +373,8 @@ export default function MetricTrendChart({ metricName, points }) {
             {new Date(hovered.recorded_at).toLocaleDateString()}
           </p>
           {hoveredPrev && (
-            <p className={hovered.value === hoveredPrev.value ? 'text-stone-400' : hovered.value > hoveredPrev.value ? 'text-emerald-600' : 'text-red-600'}>
-              {hovered.value === hoveredPrev.value ? 'No change' : `${hovered.value > hoveredPrev.value ? '+' : ''}${Math.round((hovered.value - hoveredPrev.value) * 100) / 100}`} vs prev
+            <p className={prevDelta === 0 ? 'text-stone-400' : prevImproved ? 'text-emerald-600' : 'text-red-600'}>
+              {prevDelta === 0 ? 'No change' : `${prevDelta > 0 ? '+' : ''}${Math.round(prevDelta * 100) / 100}`} vs prev
             </p>
           )}
           {pinnedIndex !== null && (
